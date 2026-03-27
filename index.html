@@ -18,6 +18,7 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        /* WORK/REST States (Body color must be defined first) */
         body {
             margin: 0;
             padding: 0;
@@ -29,6 +30,10 @@
             min-height: 100vh;
             transition: background-color 0.2s ease;
         }
+
+        /* Specific State Colors (image_3.png logic) */
+        body.work { background-color: #f5f5f5; }
+        body.rest { background-color: var(--bg); }
 
         /* iOS Safari Fix for Inputs */
         input {
@@ -57,6 +62,8 @@
             max-width: 400px;
             margin: 0 auto;
             width: 100%;
+            /* Strict Rule Fix: Make container background transparent so body color shows through */
+            background: transparent;
         }
 
         .status-label {
@@ -126,9 +133,6 @@
             margin-top: 15px;
         }
 
-        /* State Styles (WORK / REST) */
-        body.work { background-color: #f5f5f5; }
-        body.rest { background-color: var(--bg); }
         .hidden { display: none !important; }
 
         footer {
@@ -136,6 +140,7 @@
             text-align: center;
             font-size: 0.8rem;
             line-height: 1.5;
+            background: transparent; /* Rule: Footer must also be transparent */
         }
 
         .support-links {
@@ -270,14 +275,14 @@
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
 
-    // Select-all logic for inputs on focus
+    // Load & Save, and Select-all on focus
     const inputs = ['workInput', 'restInput', 'setsInput'];
     inputs.forEach(id => {
         const input = document.getElementById(id);
         const saved = localStorage.getItem(id);
         if (saved) input.value = saved;
         
-        // Auto select on tap
+        // Final Stage Rule: Auto select on tap
         input.addEventListener('focus', () => input.select());
         
         input.addEventListener('input', (e) => {
