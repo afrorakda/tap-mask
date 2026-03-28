@@ -35,7 +35,6 @@
             transition: background-color 0.3s ease;
         }
 
-        /* 修正：REST（休み）の時だけ色をつける */
         body.work { background-color: var(--bg); }
         body.rest { background-color: var(--rest-green); }
 
@@ -154,7 +153,6 @@
             margin-right: auto;
         }
 
-        /* 修正：Kofiボタンを大きく、Appボタンを小さく */
         .kofi-button {
             flex: 1;
             background: var(--main);
@@ -197,23 +195,24 @@
             padding: 30px; 
             border-radius: 20px;
             max-width: 320px;
-            width: 100%;
+            width: 90%;
             text-align: center;
             position: relative; 
         }
 
-        /* 修正：✕ボタンを右上に配置 */
-        .modal-close-icon {
+        /* ✕ボタンの配置を右上に固定（CSS修正） */
+        .close-icon {
             position: absolute;
-            top: 15px;  
-            right: 20px; 
+            top: 15px;  /* 上から15px */
+            right: 20px; /* 右から20px */
             font-size: 1.5rem; 
             color: #aaa;
             cursor: pointer;
-            background: none;
-            border: none;
             padding: 5px;
             line-height: 1;
+            background: none;
+            border: none;
+            z-index: 10; /* 他の要素より上に */
         }
     </style>
 </head>
@@ -254,10 +253,13 @@
 
 <div id="modal" onclick="this.style.display='none'">
     <div class="modal-content" onclick="event.stopPropagation()">
-        <button class="modal-close-icon" onclick="document.getElementById('modal').style.display='none'">&times;</button>
+        <button class="close-icon" onclick="document.getElementById('modal').style.display='none'">&times;</button>
         <h3 style="margin-top:10px;">Install App</h3>
-        <p>🍏 Safari: Share > Add to Home Screen</p>
-        <p>🤖 Chrome: Menu > Install App</p>
+        <p style="margin: 15px 0; color: #666; font-size: 0.9rem;">Add to home screen.</p>
+        <div style="font-size: 0.95rem; line-height: 1.5; color: #333;">
+            <p>🍏 <strong>iPhone:</strong> Share > Add to Home Screen</p>
+            <p style="margin-top:10px;">🤖 <strong>Android:</strong> Menu > Add to Home Screen</p>
+        </div>
     </div>
 </div>
 
@@ -275,7 +277,7 @@
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
 
-    // 修正：入力窓タップで全選択
+    // Load/Save and Auto-select logic
     const inputIds = ['workInput', 'restInput', 'setsInput'];
     inputIds.forEach(id => {
         const input = document.getElementById(id);
