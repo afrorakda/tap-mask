@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>8 Rounds Tabata - Fridge Combo</title>
     
-    <link rel="icon" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
+    <link rel="icon" type="image/png" href="icon.png">
 
     <style>
         :root {
@@ -35,11 +35,9 @@
             transition: background-color 0.3s ease;
         }
 
-        /* 修正：REST（休み）の時だけ色をつける */
         body.work { background-color: var(--bg); }
         body.rest { background-color: var(--rest-green); }
 
-        /* iOS Safari Fix for Inputs */
         input {
             -webkit-appearance: none;
             -webkit-text-fill-color: var(--main);
@@ -155,7 +153,6 @@
             margin-right: auto;
         }
 
-        /* 修正：Kofiボタンを大きく、Appボタンを小さく */
         .kofi-button {
             flex: 1;
             background: var(--main);
@@ -203,7 +200,6 @@
             position: relative; 
         }
 
-        /* 修正：✕ボタンを右上に配置 */
         .modal-close-icon {
             position: absolute;
             top: 15px;  
@@ -218,6 +214,7 @@
             width: auto;
             height: auto;
             line-height: 1;
+            z-index: 2; 
         }
     </style>
 </head>
@@ -279,7 +276,6 @@
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
 
-    // 修正：入力窓タップで全選択
     const inputIds = ['workInput', 'restInput', 'setsInput'];
     inputIds.forEach(id => {
         const input = document.getElementById(id);
