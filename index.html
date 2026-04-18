@@ -29,11 +29,17 @@
             background-color: var(--bg); color: var(--main);
             display: flex; flex-direction: column; align-items: center; min-height: 100vh;
             -webkit-font-smoothing: antialiased;
-            padding: calc(env(safe-area-inset-top, 20px) + 10px) 20px env(safe-area-inset-bottom, 20px);
-            overflow: hidden;
+            padding: calc(env(safe-area-inset-top, 20px) + 10px) 20px 0;
+            overflow-x: hidden;
+            overflow-y: auto; /* フッターまでスクロール可能に */
         }
 
-        .fridge-container { width: 100%; max-width: 400px; display: flex; flex-direction: column; flex-grow: 1; height: 100%; }
+        .fridge-container { 
+            width: 100%; max-width: 400px; 
+            display: flex; flex-direction: column; 
+            min-height: 100vh;
+            padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 40px);
+        }
         
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-shrink: 0; }
         h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: -1px; }
@@ -46,30 +52,35 @@
         .subtitle { font-size: 0.8rem; color: #666; font-weight: 500; margin-bottom: 15px; text-align: center; flex-shrink: 0; }
 
         .workspace {
-            flex-grow: 1; width: 100%; position: relative;
+            width: 100%; height: 450px; position: relative;
             background: var(--input-bg); border: 2px dashed var(--accent);
             border-radius: var(--radius); overflow: hidden;
-            display: flex; align-items: center; justify-content: center;
+            display: flex; align-items: center; justify-content: center; /* 中央配置 */
+            flex-shrink: 0;
         }
 
-        #drop-zone { text-align: center; padding: 20px; pointer-events: none; }
-        .drop-text { font-size: 0.9rem; font-weight: 800; color: #bbb; }
-        .drop-sub { font-size: 0.7rem; color: #ccc; margin-top: 5px; font-weight: 600; }
+        #drop-zone { 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 100%; height: 100%; pointer-events: none; 
+        }
+        .drop-text { font-size: 0.9rem; font-weight: 800; color: #bbb; text-align: center; }
+        .drop-sub { font-size: 0.7rem; color: #ccc; margin-top: 5px; font-weight: 600; text-align: center; }
 
-        #main-canvas { max-width: 100%; max-height: 100%; cursor: crosshair; touch-action: none; }
+        #main-canvas { cursor: crosshair; touch-action: none; display: none; }
 
         .toolbar { display: none; width: 100%; gap: 10px; margin-top: 15px; flex-shrink: 0; }
         .tool-btn {
             flex: 1; padding: 18px; border-radius: var(--radius);
             font-weight: 800; font-size: 1rem; cursor: pointer; border: none; transition: 0.2s;
+            -webkit-appearance: none; -webkit-text-fill-color: var(--main); opacity: 1 !important;
         }
         #undo-btn { background: var(--accent); color: var(--main); }
-        #save-btn { background: var(--main); color: #fff; }
-        .btn-success { background: var(--success) !important; color: #fff !important; }
+        #save-btn { background: var(--main); color: #fff; -webkit-text-fill-color: #fff; }
+        .btn-success { background: var(--success) !important; color: #fff !important; -webkit-text-fill-color: #fff !important; }
 
-        .guide { font-size: 11px; color: #aaa; text-align: center; margin-top: 10px; font-weight: 600; line-height: 1.4; flex-shrink: 0; }
+        .guide { font-size: 11px; color: #aaa; text-align: center; margin: 15px 0; font-weight: 600; line-height: 1.4; flex-shrink: 0; }
 
-        .footer-btns { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 20px; flex-shrink: 0; }
+        .footer-btns { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: auto; flex-shrink: 0; }
         .kofi-btn, .home-btn {
             width: 100%; max-width: 250px; padding: 12px; border-radius: var(--radius);
             font-weight: 800; font-size: 0.85rem; text-decoration: none; text-align: center; border: none; cursor: pointer;
@@ -77,7 +88,7 @@
         .kofi-btn { background: #fff; color: var(--main); border: 2px solid var(--main); }
         .home-btn { background: var(--accent); color: var(--main); }
 
-        footer { font-size: 0.7rem; color: #bbb; text-align: center; padding: 15px 0; font-weight: 600; flex-shrink: 0; }
+        footer { font-size: 0.7rem; color: #bbb; text-align: center; padding: 25px 0; font-weight: 600; flex-shrink: 0; line-height: 1.8; }
         footer a { color: inherit; text-decoration: underline; }
 
         #file-input { display: none; }
@@ -152,10 +163,14 @@
     let scale = 1;
     let offsetX = 0;
     let offsetY = 0;
+    
+    // 操作用変数
     let touchStartDist = 0;
-    let touchStartPos = { x: 0, y: 0 };
+    let touchStartMid = { x: 0, y: 0 };
+    let lastTouchPos = { x: 0, y: 0 };
     let isDragging = false;
     let cachedBlobUrl = null;
+    let flashOpacity = 0;
 
     fileIn.onchange = (e) => handleFile(e.target.files[0]);
 
@@ -169,10 +184,9 @@
                 let w = img.width, h = img.height;
                 if (w > MAX || h > MAX) {
                     const r = Math.min(MAX/w, MAX/h);
-                    w *= r; h *= r;
                     const oc = document.createElement('canvas');
-                    oc.width = w; oc.height = h;
-                    oc.getContext('2d').drawImage(img, 0, 0, w, h);
+                    oc.width = w * r; oc.height = h * r;
+                    oc.getContext('2d').drawImage(img, 0, 0, oc.width, oc.height);
                     const safeImg = new Image();
                     safeImg.onload = () => { currentImg = safeImg; initWorkspace(); };
                     safeImg.src = oc.toDataURL('image/jpeg', 0.9);
@@ -187,28 +201,43 @@
 
     function initWorkspace() {
         dropZone.style.display = 'none';
+        canvas.style.display = 'block';
         toolbar.style.display = 'flex';
         masks = [];
+        
         const wr = workspace.clientWidth / currentImg.width;
         const hr = workspace.clientHeight / currentImg.height;
         scale = Math.min(wr, hr, 1);
+        centerImage();
+        draw();
+    }
+
+    function centerImage() {
         offsetX = (workspace.clientWidth - currentImg.width * scale) / 2;
         offsetY = (workspace.clientHeight - currentImg.height * scale) / 2;
-        draw();
     }
 
     function draw() {
         if (!currentImg) return;
         canvas.width = workspace.clientWidth;
         canvas.height = workspace.clientHeight;
+        
+        ctx.clearRect(0,0,canvas.width, canvas.height);
         ctx.save();
         ctx.translate(offsetX, offsetY);
         ctx.scale(scale, scale);
         ctx.drawImage(currentImg, 0, 0);
         
-        const maskSize = Math.max(currentImg.width, currentImg.height) * 0.08;
+        const maskSize = Math.max(currentImg.width, currentImg.height) * 0.15; // 15%に拡大
         masks.forEach(m => applyMosaic(m.x, m.y, maskSize));
         ctx.restore();
+
+        if (flashOpacity > 0) {
+            ctx.fillStyle = `rgba(255,255,255,${flashOpacity})`;
+            ctx.fillRect(0,0,canvas.width, canvas.height);
+            flashOpacity -= 0.1;
+            requestAnimationFrame(draw);
+        }
         updateCache();
     }
 
@@ -216,7 +245,7 @@
         const x_start = x - size / 2;
         const y_start = y - size / 2;
         const r = 15;
-        const granularity = 12;
+        const granularity = 10;
 
         ctx.save();
         ctx.beginPath();
@@ -241,43 +270,56 @@
     canvas.addEventListener('touchstart', (e) => {
         if (e.touches.length === 1) {
             isDragging = true;
-            touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            lastTouchPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
         } else if (e.touches.length === 2) {
             isDragging = false;
-            touchStartDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            const t1 = e.touches[0], t2 = e.touches[1];
+            touchStartDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+            touchStartMid = { x: (t1.clientX + t2.clientX)/2, y: (t1.clientY + t2.clientY)/2 };
         }
-    });
+    }, {passive: false});
 
     canvas.addEventListener('touchmove', (e) => {
         e.preventDefault();
         if (e.touches.length === 1 && isDragging) {
-            const dx = e.touches[0].clientX - touchStartPos.x;
-            const dy = e.touches[0].clientY - touchStartPos.y;
-            if (Math.hypot(dx, dy) > 5) {
-                offsetX += dx; offsetY += dy;
-                touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-                draw();
-            }
+            const dx = e.touches[0].clientX - lastTouchPos.x;
+            const dy = e.touches[0].clientY - lastTouchPos.y;
+            offsetX += dx; offsetY += dy;
+            lastTouchPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            draw();
         } else if (e.touches.length === 2) {
-            const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            const t1 = e.touches[0], t2 = e.touches[1];
+            const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+            const mid = { x: (t1.clientX + t2.clientX)/2, y: (t1.clientY + t2.clientY)/2 };
+            
             const zoom = dist / touchStartDist;
-            scale *= zoom;
+            const newScale = scale * zoom;
+            
+            // 中心点基準のオフセット計算
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = mid.x - rect.left;
+            const mouseY = mid.y - rect.top;
+            
+            offsetX = mouseX - (mouseX - offsetX) * (newScale / scale);
+            offsetY = mouseY - (mouseY - offsetY) * (newScale / scale);
+            
+            scale = newScale;
             touchStartDist = dist;
+            touchStartMid = mid;
             draw();
         }
-    }, { passive: false });
+    }, {passive: false});
 
     canvas.addEventListener('touchend', (e) => {
         if (e.touches.length === 0 && isDragging) {
-            const dx = e.changedTouches[0].clientX - touchStartPos.x;
-            const dy = e.changedTouches[0].clientY - touchStartPos.y;
-            if (Math.hypot(dx, dy) < 10) {
-                const rect = canvas.getBoundingClientRect();
-                const tx = (e.changedTouches[0].clientX - rect.left - offsetX) / scale;
-                const ty = (e.changedTouches[0].clientY - rect.top - offsetY) / scale;
-                masks.push({ x: tx, y: ty });
-                draw();
-            }
+            const rect = canvas.getBoundingClientRect();
+            const tx = (lastTouchPos.x - rect.left - offsetX) / scale;
+            const ty = (lastTouchPos.y - rect.top - offsetY) / scale;
+            
+            // タップ判定（移動が少なければ設置）
+            masks.push({ x: tx, y: ty });
+            flashOpacity = 0.4;
+            draw();
         }
         isDragging = false;
     });
@@ -286,20 +328,15 @@
 
     async function updateCache() {
         if (!currentImg) return;
-        if (cachedBlobUrl) URL.revokeObjectURL(cachedBlobUrl);
-        
         const sc = document.createElement('canvas');
         sc.width = currentImg.width; sc.height = currentImg.height;
         const sctx = sc.getContext('2d');
         sctx.drawImage(currentImg, 0, 0);
         
-        const maskSize = Math.max(currentImg.width, currentImg.height) * 0.08;
-        const granularity = 12;
-        const r = 15;
-
+        const maskSize = Math.max(currentImg.width, currentImg.height) * 0.15;
         masks.forEach(m => {
-            const x_s = m.x - maskSize / 2;
-            const y_s = m.y - maskSize / 2;
+            const x_s = m.x - maskSize / 2; const y_s = m.y - maskSize / 2;
+            const r = 15; const g = 10;
             sctx.save();
             sctx.beginPath();
             sctx.moveTo(x_s + r, y_s);
@@ -307,36 +344,34 @@
             sctx.arcTo(x_s + maskSize, y_s + maskSize, x_s, y_s + maskSize, r);
             sctx.arcTo(x_s, y_s + maskSize, x_s, y_s, r);
             sctx.arcTo(x_s, y_s, x_s + maskSize, y_s, r);
-            sctx.closePath();
-            sctx.clip();
-            
+            sctx.closePath(); sctx.clip();
             const oc = document.createElement('canvas');
-            oc.width = granularity; oc.height = granularity;
-            oc.getContext('2d').drawImage(currentImg, x_s, y_s, maskSize, maskSize, 0, 0, granularity, granularity);
+            oc.width = g; oc.height = g;
+            oc.getContext('2d').drawImage(currentImg, x_s, y_s, maskSize, maskSize, 0, 0, g, g);
             sctx.imageSmoothingEnabled = false;
-            sctx.drawImage(oc, 0, 0, granularity, granularity, x_s, y_s, maskSize, maskSize);
+            sctx.drawImage(oc, 0, 0, g, g, x_s, y_s, maskSize, maskSize);
             sctx.imageSmoothingEnabled = true;
             sctx.restore();
         });
-
-        sc.toBlob(blob => { cachedBlobUrl = URL.createObjectURL(blob); }, 'image/jpeg', 0.9);
+        sc.toBlob(blob => {
+            if(cachedBlobUrl) URL.revokeObjectURL(cachedBlobUrl);
+            cachedBlobUrl = URL.createObjectURL(blob);
+        }, 'image/jpeg', 0.9);
     }
 
     saveBtn.onclick = () => {
         if (!cachedBlobUrl) return;
         const a = document.createElement('a');
-        a.download = `masked_${Date.now()}.jpg`;
+        a.download = `tapmask_${Date.now()}.jpg`;
         a.href = cachedBlobUrl;
         a.click();
-        const ot = saveBtn.textContent;
         saveBtn.textContent = "Saved!";
         saveBtn.classList.add('btn-success');
-        setTimeout(() => { saveBtn.textContent = ot; saveBtn.classList.remove('btn-success'); }, 1200);
+        setTimeout(() => { saveBtn.textContent = "Save Image"; saveBtn.classList.remove('btn-success'); }, 1200);
     };
 
     document.getElementById('homeBtn').onclick = () => document.getElementById('modal').style.display = 'flex';
     document.getElementById('closeModal').onclick = () => document.getElementById('modal').style.display = 'none';
-    window.onclick = (e) => { if (e.target == document.getElementById('modal')) document.getElementById('modal').style.display = 'none'; };
 
     async function loadFooter() {
         try {
