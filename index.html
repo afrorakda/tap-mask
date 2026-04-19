@@ -228,7 +228,7 @@
         ctx.scale(scale, scale);
         ctx.drawImage(currentImg, 0, 0);
         
-        const maskSize = Math.max(currentImg.width, currentImg.height) * 0.15; // 15%に拡大
+        const maskSize = Math.max(currentImg.width, currentImg.height) * 0.08; // 黄金比（8%）に回帰
         masks.forEach(m => applyMosaic(m.x, m.y, maskSize));
         ctx.restore();
 
@@ -257,12 +257,15 @@
         ctx.closePath();
         ctx.clip();
 
-        const oc = document.createElement('canvas');
-        oc.width = granularity; oc.height = granularity;
-        oc.getContext('2d').drawImage(currentImg, x_start, y_start, size, size, 0, 0, granularity, granularity);
+        // 直接描画（ocを使わない）で爆速化
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = granularity;
+        tempCanvas.height = granularity;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(currentImg, x_start, y_start, size, size, 0, 0, granularity, granularity);
         
         ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(oc, 0, 0, granularity, granularity, x_start, y_start, size, size);
+        ctx.drawImage(tempCanvas, 0, 0, granularity, granularity, x_start, y_start, size, size);
         ctx.imageSmoothingEnabled = true;
         ctx.restore();
     }
@@ -333,7 +336,7 @@
         const sctx = sc.getContext('2d');
         sctx.drawImage(currentImg, 0, 0);
         
-        const maskSize = Math.max(currentImg.width, currentImg.height) * 0.15;
+        const maskSize = Math.max(currentImg.width, currentImg.height) * 0.08;
         masks.forEach(m => {
             const x_s = m.x - maskSize / 2; const y_s = m.y - maskSize / 2;
             const r = 15; const g = 10;
